@@ -49,11 +49,29 @@ applicable?"*, *"Which candidate value should win?"* — returned as typed answe
 with probabilities and confidence. Typed output guarantees the interface, not the
 truth; calibration against your own data is what the test matrix is for.
 
-## Quick start
+## Install — just ask your agent
+
+The intended way to install Handoff Steward is **one natural-language sentence** to
+Claude Code, Codex, or any agent with shell access:
+
+> **EN:** "Clone https://github.com/fireworks/handoff-steward, follow its README to install the `handoff-steward` CLI, run `install-skill` so you and my other tools get the skill, then run `doctor --live` to verify. Ask me for the TypeSafe API key when needed."
+
+> **中文：** “克隆 https://github.com/fireworks/handoff-steward 并按 README 装好 handoff-steward CLI，运行 install-skill 把你和其他工具的 skill 装上，最后跑 doctor --live 验证。需要 TypeSafe API key 时找我要。”
+
+The agent will: clone → `pip install .` → `handoff-steward install-skill`
+(detects `~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`, `~/.pi/agent/skills`)
+→ ask you for `TYPESAFE_API_KEY` → `handoff-steward doctor --live` to prove the setup.
+From then on, every agent that discovers the skill automatically routes handoff writes
+through the gateway — that discovery *is* the integration.
+
+## Quick start (manual)
 
 ```bash
 pip install .            # or: pip install handoff-steward
 export TYPESAFE_API_KEY=...   # from https://console.typesafe.ai/settings/keys
+
+handoff-steward install-skill   # ship the behavioral contract to your agents
+handoff-steward doctor --live   # verify: key set, skill installed, Jev reachable
 
 # initialize a store for one goal
 handoff-steward --root ./stores/goal-1 init --goal-id goal-1 --goal "Ship the video pipeline"
@@ -145,7 +163,9 @@ Latest local run: **10/10 routing matrix PASS**, **5/5 concurrency checks PASS**
 ## Project layout
 
 ```
-steward/            # the package: schema, store, jev_gate, router, steward, watchdog, lock, cli
+steward/            # the package: schema, store, jev_gate, router, steward, watchdog, lock,
+                    # install (skill installer + doctor), cli
+steward/assets/     # the bundled agent skill (installed by `install-skill`)
 tests/              # offline unit tests + live integration suites
 examples/proposals/ # ready-to-submit proposal JSON
 docs/               # logo, architecture diagram (SVG + PNG)

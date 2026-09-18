@@ -44,11 +44,28 @@ Handoff Steward 挡在**每一次 handoff 写入之前**，作为单写者网关
 「两个候选值该选哪个？」*——以带概率和置信度的类型化答案返回。类型化输出保证的是
 接口而不是真相；针对你自己的数据做校准，正是测试矩阵存在的意义。
 
-## 快速开始
+## 安装——对你的 agent 说一句话
+
+推荐的安装方式是**一句自然语言**，说给 Claude Code、Codex 或任何有 shell 权限的 agent：
+
+> “克隆 https://github.com/fireworks/handoff-steward 并按 README 装好 handoff-steward CLI，运行 install-skill 把你和其他工具的 skill 装上，最后跑 doctor --live 验证。需要 TypeSafe API key 时找我要。”
+
+> **EN:** "Clone https://github.com/fireworks/handoff-steward, follow its README to install the `handoff-steward` CLI, run `install-skill` so you and my other tools get the skill, then run `doctor --live` to verify. Ask me for the TypeSafe API key when needed."
+
+agent 会依次执行：克隆 → `pip install .` → `handoff-steward install-skill`
+（自动探测 `~/.claude/skills`、`~/.codex/skills`、`~/.agents/skills`、`~/.pi/agent/skills`）
+→ 向你要 `TYPESAFE_API_KEY` → `handoff-steward doctor --live` 自检通过。
+此后，每个能发现这个 skill 的 agent 都会自动把 handoff 写入改道到网关——
+**skill 的发现本身就是集成**，不需要改任何工具的配置。
+
+## 快速开始（手动）
 
 ```bash
 pip install .            # 或：pip install handoff-steward
 export TYPESAFE_API_KEY=...   # 从 https://console.typesafe.ai/settings/keys 获取
+
+handoff-steward install-skill   # 把行为规约分发给各个 agent
+handoff-steward doctor --live   # 自检：key 已配置、skill 已安装、Jev 可达
 
 # 为一个 goal 初始化 store
 handoff-steward --root ./stores/goal-1 init --goal-id goal-1 --goal "交付视频管线"
@@ -136,7 +153,8 @@ python tests/live_concurrent.py       # 6 进程同 base_version 并发，零丢
 ## 项目结构
 
 ```
-steward/            # 包：schema、store、jev_gate、router、steward、watchdog、lock、cli
+steward/            # 包：schema、store、jev_gate、router、steward、watchdog、lock、install、cli
+steward/assets/     # 内置 agent skill（由 install-skill 分发）
 tests/              # 离线单测 + live 集成套件
 examples/proposals/ # 可直接提交的 proposal 示例
 docs/               # Logo、架构图（SVG + PNG）

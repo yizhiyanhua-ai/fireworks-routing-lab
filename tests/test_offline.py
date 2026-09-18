@@ -121,6 +121,30 @@ def test_diff_to_proposals_detects_changes(root):
     assert all(p.author_tool == "external" for p in proposals)
 
 
+# ---- install & doctor ----
+
+def test_install_skill_lifecycle(tmp_path):
+    from steward.install import doctor, install_skill
+    target = tmp_path / "skills"
+    results = install_skill(targets=[str(target)])
+    assert results[0]["status"] == "installed"
+    assert (target / "handoff-steward" / "SKILL.md").exists()
+    assert install_skill(targets=[str(target)])[0]["status"] == "already up to date"
+    (target / "handoff-steward" / "SKILL.md").write_text("stale")
+    assert install_skill(targets=[str(target)])[0]["status"] == "updated"
+
+
+def test_doctor_reports_missing_key_and_skill(tmp_path, monkeypatch):
+    from steward.install import doctor
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    report = doctor(targets=[str(tmp_path / "nowhere")])
+    assert report["ok"] is False
+    by_name = {c["name"]: c for c in report["checks"]}
+    assert by_name["TYPESAFE_API_KEY"]["ok"] is False
+    monkeypatch.setenv("TYPESAFE_API_KEY", "k")
+    assert doctor(targets=[str(tmp_path / "nowhere")])["ok"] is False  # skill still missing
+
+
 # ---- fail-closed ----
 
 def test_submit_fails_closed_when_jev_down(root):

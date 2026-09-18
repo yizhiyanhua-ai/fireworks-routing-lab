@@ -1,18 +1,18 @@
-"""CLI: init / submit / status / history / reconcile / watch."""
+"""CLI: init / submit / status / history / reconcile / watch / install-skill / doctor."""
 from __future__ import annotations
 
 import argparse
 import json
 import sys
 
-from . import store, watchdog
+from . import install, store, watchdog
 from .schema import Proposal
 from .steward import Steward
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(prog="steward")
-    ap.add_argument("--root", required=True, help="store directory for the handoff")
+    ap.add_argument("--root", help="store directory for the handoff (not needed for install-skill/doctor)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("init")
@@ -30,7 +30,32 @@ def main() -> None:
     p = sub.add_parser("watch")
     p.add_argument("--interval", type=float, default=5.0)
 
+    p = sub.add_parser("install-skill", help="install the bundled agent skill into agent skill dirs")
+    p.add_argument("--target", action="append", help="explicit skills dir; repeatable. Default: auto-detect")
+    p.add_argument("--create", action="store_true", help="create agent skill dirs that do not exist yet")
+
+    p = sub.add_parser("doctor", help="check install readiness")
+    p.add_argument("--live", action="store_true", help="also ping the TypeSafe API")
+    p.add_argument("--target", action="append", help="explicit skills dir to check; repeatable")
+
     args = ap.parse_args()
+
+    if args.cmd == "install-skill":
+        results = install.install_skill(targets=args.target, create=args.create)
+        print(json.dumps(results, ensure_ascii=False, indent=2))
+        failed = [r for r in results if r["status"].startswith("skipped")]
+        if results and len(failed) == len(results):
+            print("No agent skill dirs found. Re-run with --create or --target <dir>.", file=sys.stderr)
+            sys.exit(1)
+        return
+
+    if args.cmd == "doctor":
+        report = install.doctor(live=args.live, targets=args.target)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        sys.exit(0 if report["ok"] else 1)
+
+    if not args.root:
+        ap.error(f"--root is required for '{args.cmd}'")
 
     if args.cmd == "init":
         doc = store.init_store(args.root, args.goal_id, args.goal)

@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Bundled agent skill** (`steward/assets/handoff-steward/SKILL.md`): the write-gateway
+  behavioral contract, shipped inside the package — generic paths, works for any agent
+- **`handoff-steward install-skill`**: auto-detects `~/.claude/skills`, `~/.codex/skills`,
+  `~/.agents/skills`, `~/.pi/agent/skills` and installs/updates the skill; `--target`, `--create`
+- **`handoff-steward doctor`**: verifies API key, skill installation, and (with `--live`)
+  TypeSafe API reachability; exits nonzero when required checks fail
+- **Natural-language install**: README (EN + ZH) now leads with a one-sentence prompt users
+  can paste into Claude Code / Codex to install and verify everything
+- CI: GitHub Actions running offline tests on push/PR (Python 3.11–3.13)
+
 ## [0.1.0] - 2026-09-18
 
 First public release.

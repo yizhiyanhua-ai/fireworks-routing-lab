@@ -1,0 +1,8 @@
+{
+  "author_tool": "kimi",
+  "base_version": 1,
+  "section": "evidence_log",
+  "operation": "append",
+  "content": "Load test: PostgreSQL p99 120ms, report at artifacts/perf-01.md",
+  "summary": "Attach load-test evidence"
+}

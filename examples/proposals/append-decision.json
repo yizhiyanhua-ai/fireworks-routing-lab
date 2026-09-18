@@ -1,0 +1,9 @@
+{
+  "author_tool": "codex",
+  "author_ref": "codex:session-main",
+  "base_version": 0,
+  "section": "decisions",
+  "operation": "append",
+  "content": {"text": "State storage uses PostgreSQL; document stores are out of scope"},
+  "summary": "Record architecture decision: PostgreSQL as state storage"
+}

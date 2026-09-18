@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "handoff-steward"
+version = "0.1.0"
+description = "Version-managed routing for multi-agent handoff documents, with Jev (TypeSafe System One) as the semantic gate"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "fireworks" }]
+keywords = ["multi-agent", "handoff", "routing", "typesafe", "jev", "versioning"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Version Control",
+]
+dependencies = ["typesafe-sdk>=0.7.0"]
+
+[project.optional-dependencies]
+socks = ["socksio>=1.0.0"]   # needed when ALL_PROXY points at a SOCKS proxy
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+handoff-steward = "steward.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["steward"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,162 @@
+<div align="center">
+  <img src="docs/logo.png" alt="Handoff Steward logo" width="180"/>
+  <h1>Handoff Steward</h1>
+  <p><strong>Version-managed routing for multi-agent handoff documents.</strong><br/>
+  Jev (TypeSafe System One) makes the semantic judgments. Code owns the version mechanics.</p>
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"/></a>
+    <img src="https://img.shields.io/badge/python-%3E%3D3.11-blue.svg" alt="Python >=3.11"/>
+    <img src="https://img.shields.io/badge/tests-10%20offline%20%2B%2016%20live-brightgreen.svg" alt="tests"/>
+  </p>
+  <p><a href="README.zh.md">中文文档</a></p>
+</div>
+
+---
+
+## The problem
+
+You run a large goal across several AI coding tools — Codex, Claude, Kimi — and each of
+them spawns parallel subagents. They all share handoff documents to stay aligned. Under
+high-frequency concurrent updates, those documents degrade fast: lost updates,
+contradictory decisions recorded side by side, no idea which version is canonical.
+
+Handoff Steward sits **in front of every handoff write** as a single-writer gateway.
+Tools never edit the document directly; they submit *update proposals*. The steward
+serializes them, asks Jev to judge each proposal semantically, and routes it:
+auto-commit, field-level merge, rejection, or escalation to a human.
+
+## Architecture
+
+![Handoff Steward architecture](docs/handoff-steward-arch.png)
+
+[SVG source](docs/handoff-steward-arch.svg) — OpenAI Official style
+
+The complete system = **skill (behavioral contract) + CLI (the only write path) +
+Steward Core (serialization + Jev semantic routing) + versioned store + watchdog reconcile**:
+
+- Parallel subagents of all tools follow the skill contract and submit proposals via the CLI
+- Steward Core absorbs reordering; the Jev Gate asks 4 questions in one parallel call;
+  the Router maps answers to one of four verdicts
+- `auto_commit` writes canonical + event log; `escalate` writes a brief for a human;
+  the watchdog reverts any direct write and recycles it as an anonymous proposal
+
+## Why Jev only judges, never writes
+
+Merge mechanics (diff, three-way, serialization, locking) are deterministic code —
+that is where correctness lives. Jev answers the questions code cannot:
+*"Does this proposal contradict decision D-1?"*, *"Is this stale proposal still
+applicable?"*, *"Which candidate value should win?"* — returned as typed answers
+with probabilities and confidence. Typed output guarantees the interface, not the
+truth; calibration against your own data is what the test matrix is for.
+
+## Quick start
+
+```bash
+pip install .            # or: pip install handoff-steward
+export TYPESAFE_API_KEY=...   # from https://console.typesafe.ai/settings/keys
+
+# initialize a store for one goal
+handoff-steward --root ./stores/goal-1 init --goal-id goal-1 --goal "Ship the video pipeline"
+
+# agents submit proposals instead of editing handoff.md
+handoff-steward --root ./stores/goal-1 submit --proposal examples/proposals/append-decision.json
+
+handoff-steward --root ./stores/goal-1 status
+handoff-steward --root ./stores/goal-1 history
+handoff-steward --root ./stores/goal-1 watch --interval 5   # watchdog mode
+```
+
+> Behind a SOCKS proxy (`ALL_PROXY=socks5://...`), install with `pip install .[socks]`.
+
+## Proposal format
+
+```json
+{
+  "author_tool": "claude",
+  "author_ref": "claude:session-abc:subagent-3",
+  "base_version": 3,
+  "section": "decisions",
+  "operation": "append",
+  "content": {"text": "State storage uses PostgreSQL"},
+  "summary": "Record architecture decision: PostgreSQL"
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `author_tool` | Who you are: `codex` / `claude` / `kimi` / `pi` / `external` |
+| `author_ref` | Optional fine-grained identity. **Required under concurrency** for traceability |
+| `base_version` | The canonical version the proposal was computed from (stale bases are re-gated) |
+| `section` | `goal` / `current_state` / `decisions` / `open_questions` / `next_actions` / `evidence_log` |
+| `operation` | `append` / `update` (updating a decision supersedes it) |
+| `content` | String for text sections; `{"text": ...}` for decisions; `{"id": "D-1", "text": ...}` to supersede |
+| `summary` | One-line statement of intent — read by Jev and by humans |
+
+## The routing table
+
+Every proposal gets one parallel Jev call: `update_kind` (Choice), `target_section`
+(Choice), `decision_conflict` (Noul fan-out per overlapping decision), `merge_risk`
+(Score). Then the routing table decides:
+
+| Condition | Verdict |
+|---|---|
+| `update_kind = unrelated` | **reject** |
+| stale base and `still_applies < 0.5` | **reject** |
+| any `decision_conflict p > 0.6` | **escalate** |
+| any decisive `confidence < 0.5` | **escalate** |
+| `merge_risk ≤ 0.5` | **auto_commit** |
+| `merge_risk ≤ 1.5` | **field_select** (Jev picks: accept / keep existing / human) |
+| `merge_risk > 1.5` | **escalate** |
+
+Thresholds live in `<store>/config.json` — tune them against your own data.
+
+## Concurrency model
+
+Cross-tool and same-tool (multiple sessions × subagents) look identical to the
+steward: concurrent proposal submitters.
+
+- Serialization is an **OS-level flock** on `<store>/.steward.lock`, shared by
+  `submit` and `reconcile` — version check, Jev gating and commit can never interleave
+- Late submitters with stale `base_version` are re-gated via `still_applies`;
+  if their change is still valid it lands normally — no lost updates
+- The handoff document is a **projection** of an append-only event log plus
+  content-addressed snapshots: every action is traceable, rollback is free
+
+## Fail-closed degradation
+
+If the Jev API is unreachable or errors, the proposal is **escalated to a human with
+a written brief** — never auto-committed, never silently dropped. The system degrades
+to "serialize everything, humans decide", never to "everyone writes directly".
+
+## Testing
+
+```bash
+# offline unit tests — no API key needed
+pip install .[dev] && pytest tests/test_offline.py
+
+# live integration (requires TYPESAFE_API_KEY)
+python tests/live_routing_matrix.py   # 10 routing cases against live Jev
+python tests/live_concurrent.py       # 6 processes, same base_version, zero lost updates
+```
+
+Latest local run: **10/10 routing matrix PASS**, **5/5 concurrency checks PASS**
+(decision-conflict detection at p=0.98, stale re-gating at 0.57–0.69).
+
+## Project layout
+
+```
+steward/            # the package: schema, store, jev_gate, router, steward, watchdog, lock, cli
+tests/              # offline unit tests + live integration suites
+examples/proposals/ # ready-to-submit proposal JSON
+docs/               # logo, architecture diagram (SVG + PNG)
+```
+
+## Contributing
+
+Issues and PRs welcome. Please run `pytest tests/test_offline.py` before submitting;
+if your change touches routing behavior, add a case to `tests/live_routing_matrix.py`
+and declare its expected verdict up front.
+
+## License
+
+[MIT](LICENSE)

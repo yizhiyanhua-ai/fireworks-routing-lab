@@ -1,0 +1,152 @@
+<div align="center">
+  <img src="docs/logo.png" alt="Handoff Steward logo" width="180"/>
+  <h1>Handoff Steward</h1>
+  <p><strong>多智能体 handoff 文档的版本化管理路由。</strong><br/>
+  Jev（TypeSafe System One）负责语义判断，代码负责版本机制。</p>
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"/></a>
+    <img src="https://img.shields.io/badge/python-%3E%3D3.11-blue.svg" alt="Python >=3.11"/>
+    <img src="https://img.shields.io/badge/tests-10%20offline%20%2B%2016%20live-brightgreen.svg" alt="tests"/>
+  </p>
+  <p><a href="README.md">English</a></p>
+</div>
+
+---
+
+## 要解决的问题
+
+你在多个 AI 编程工具（Codex、Claude、Kimi）之间推进一个大目标，每个工具还会派生
+并行子任务。大家靠共享 handoff 文档对齐上下文。在高频并发更新下，文档很快失控：
+更新丢失、矛盾决策并存、谁也不知道哪个版本才是真的。
+
+Handoff Steward 挡在**每一次 handoff 写入之前**，作为单写者网关。工具不再直接编辑
+文档，而是提交「更新提案」。Steward 串行处理这些提案，让 Jev 对每个提案做语义判断，
+然后路由到四种结果之一：自动入库、字段级合并、驳回、升级人工。
+
+## 体系架构
+
+![Handoff Steward 架构](docs/handoff-steward-arch.png)
+
+[SVG 源文件](docs/handoff-steward-arch.svg)（OpenAI Official 风格）
+
+完整体系 = **skill（行为规约）+ CLI（唯一写入通道）+ Steward Core（串行 + Jev 语义路由）
++ 版本化存储 + Watchdog 对账**：
+
+- 三个工具的并行子任务受 skill 规约，构造 proposal 经 CLI 提交
+- Steward Core 吸收乱序；Jev Gate 一次调用 4 问并行判断；Router 按阈值路由 verdict
+- `auto_commit` 写 canonical + 事件日志；`escalate` 写 brief 等人裁；
+  watchdog 把外部直写回滚并回收为匿名提案重走路由
+
+## 设计原则：Jev 只判断，不写作
+
+合并机制（diff、three-way、串行化、锁）是确定性代码——正确性在那里。Jev 只回答
+代码回答不了的问题：*「这个提案和决策 D-1 矛盾吗？」「过时提案现在还有效吗？」
+「两个候选值该选哪个？」*——以带概率和置信度的类型化答案返回。类型化输出保证的是
+接口而不是真相；针对你自己的数据做校准，正是测试矩阵存在的意义。
+
+## 快速开始
+
+```bash
+pip install .            # 或：pip install handoff-steward
+export TYPESAFE_API_KEY=...   # 从 https://console.typesafe.ai/settings/keys 获取
+
+# 为一个 goal 初始化 store
+handoff-steward --root ./stores/goal-1 init --goal-id goal-1 --goal "交付视频管线"
+
+# agent 提交 proposal，而不是直接编辑 handoff.md
+handoff-steward --root ./stores/goal-1 submit --proposal examples/proposals/append-decision.json
+
+handoff-steward --root ./stores/goal-1 status
+handoff-steward --root ./stores/goal-1 history
+handoff-steward --root ./stores/goal-1 watch --interval 5   # watchdog 常驻模式
+```
+
+> 走 SOCKS 代理（`ALL_PROXY=socks5://...`）时，用 `pip install .[socks]` 安装。
+
+## Proposal 格式
+
+```json
+{
+  "author_tool": "claude",
+  "author_ref": "claude:session-abc:subagent-3",
+  "base_version": 3,
+  "section": "decisions",
+  "operation": "append",
+  "content": {"text": "状态存储统一用 PostgreSQL"},
+  "summary": "记录架构决策：PostgreSQL"
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `author_tool` | 你是谁：`codex` / `claude` / `kimi` / `pi` / `external` |
+| `author_ref` | 可选细粒度身份。**并发场景必填**，用于溯源和升级排查 |
+| `base_version` | 提案基于的 canonical 版本（过时基线会被重新门控） |
+| `section` | `goal` / `current_state` / `decisions` / `open_questions` / `next_actions` / `evidence_log` |
+| `operation` | `append` / `update`（update 决策 = 废止旧决策） |
+| `content` | 文本区用字符串；decisions 用 `{"text": ...}`；废止用 `{"id": "D-1", "text": ...}` |
+| `summary` | 一句话意图说明，Jev 和人都看 |
+
+## 路由表
+
+每个提案触发一次并行 Jev 调用：`update_kind`（Choice）、`target_section`（Choice）、
+`decision_conflict`（对每个重叠决策的 Noul fan-out）、`merge_risk`（Score）。
+然后路由表裁决：
+
+| 条件 | 结果 |
+|---|---|
+| `update_kind = unrelated` | **reject** |
+| 基线过时且 `still_applies < 0.5` | **reject** |
+| 任一 `decision_conflict p > 0.6` | **escalate** |
+| 任一关键 `confidence < 0.5` | **escalate** |
+| `merge_risk ≤ 0.5` | **auto_commit** |
+| `merge_risk ≤ 1.5` | **field_select**（Jev 三选一：采用 / 保留 / 人工） |
+| `merge_risk > 1.5` | **escalate** |
+
+阈值在 `<store>/config.json`，请按你的真实数据校准。
+
+## 并发模型
+
+跨工具和同工具（多 session × 多 subagent）对 steward 来说完全同构：都是并发提案提交者。
+
+- 串行化由 `<store>/.steward.lock` 的 **OS 级 flock** 保证，`submit` 与 `reconcile`
+  共享同一临界区——版本检查、Jev 门控、commit 不会交错
+- `base_version` 落后的后到者自动走 `still_applies` 重检；仍有效则正常入库，不丢更新
+- handoff 文档是 append-only 事件日志 + 内容寻址快照的**投影**：全程可溯源，回滚零成本
+
+## Fail-closed 降级
+
+Jev API 不可用或报错时，提案会**附带完整 brief 升级人工**——绝不自动入库，绝不静默
+丢弃。系统退化为「全部串行、人来裁决」，绝不会退化成「大家直接写」。
+
+## 测试
+
+```bash
+# 离线单元测试——不需要 API key
+pip install .[dev] && pytest tests/test_offline.py
+
+# live 集成测试（需要 TYPESAFE_API_KEY）
+python tests/live_routing_matrix.py   # 10 个路由 case 打真实 Jev
+python tests/live_concurrent.py       # 6 进程同 base_version 并发，零丢失更新
+```
+
+最近一次本地运行：路由矩阵 **10/10 PASS**，并发检查 **5/5 PASS**
+（矛盾决策检测 p=0.98，stale 重检 0.57–0.69）。
+
+## 项目结构
+
+```
+steward/            # 包：schema、store、jev_gate、router、steward、watchdog、lock、cli
+tests/              # 离线单测 + live 集成套件
+examples/proposals/ # 可直接提交的 proposal 示例
+docs/               # Logo、架构图（SVG + PNG）
+```
+
+## 贡献
+
+欢迎 Issue 和 PR。提交前请跑 `pytest tests/test_offline.py`；如果改动涉及路由行为，
+请在 `tests/live_routing_matrix.py` 里加 case，并事先声明预期 verdict。
+
+## License
+
+[MIT](LICENSE)

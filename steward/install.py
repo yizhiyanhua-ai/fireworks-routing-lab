@@ -58,6 +58,7 @@ MCP_COMMAND = "handoff-steward-mcp"
 MCP_JSON_TARGETS = {
     "cursor": Path.home() / ".cursor" / "mcp.json",
     "gemini": Path.home() / ".gemini" / "settings.json",
+    "kimi": Path.home() / ".kimi-code" / "mcp.json",
 }
 CODEX_CONFIG = Path.home() / ".codex" / "config.toml"
 CLAUDE_JSON = Path.home() / ".claude.json"
@@ -113,7 +114,7 @@ def _register_claude() -> str:
 
 def install_mcp(agents: list[str] | None = None, create: bool = True) -> list[dict]:
     """Register the MCP server with coding agents."""
-    wanted = agents or ["claude", "codex", "cursor", "gemini"]
+    wanted = agents or ["claude", "codex", "cursor", "gemini", "kimi"]
     results = []
     for agent in wanted:
         entry = {"agent": agent}
@@ -139,6 +140,7 @@ def mcp_registrations() -> dict[str, bool]:
         "codex": _codex_registered(),
         "cursor": _mcp_registered_in_json(MCP_JSON_TARGETS["cursor"]),
         "gemini": _mcp_registered_in_json(MCP_JSON_TARGETS["gemini"]),
+        "kimi": _mcp_registered_in_json(MCP_JSON_TARGETS["kimi"]),
     }
 
 

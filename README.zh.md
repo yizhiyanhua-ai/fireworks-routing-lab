@@ -26,9 +26,9 @@ Handoff Steward 挡在**每一次 handoff 写入之前**，作为单写者网关
 
 ## 体系架构
 
-![Handoff Steward 架构](docs/handoff-steward-arch.png)
+![Handoff Steward 架构](docs/handoff-steward-arch-zh.png)
 
-[SVG 源文件](docs/handoff-steward-arch.svg)（OpenAI Official 风格）
+[SVG 源文件](docs/handoff-steward-arch-zh.svg)（OpenAI Official 风格）
 
 完整体系 = **skill（行为规约）+ CLI（唯一写入通道）+ Steward Core（串行 + Jev 语义路由）
 + 版本化存储 + Watchdog 对账**：

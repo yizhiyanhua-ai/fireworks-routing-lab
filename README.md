@@ -28,9 +28,9 @@ auto-commit, field-level merge, rejection, or escalation to a human.
 
 ## Architecture
 
-![Handoff Steward architecture](docs/handoff-steward-arch.png)
+![Handoff Steward architecture](docs/handoff-steward-arch-en.png)
 
-[SVG source](docs/handoff-steward-arch.svg) — OpenAI Official style
+[SVG source](docs/handoff-steward-arch-en.svg) — OpenAI Official style
 
 The complete system = **skill (behavioral contract) + CLI (the only write path) +
 Steward Core (serialization + Jev semantic routing) + versioned store + watchdog reconcile**:

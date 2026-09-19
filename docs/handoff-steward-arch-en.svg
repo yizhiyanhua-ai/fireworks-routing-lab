@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 880" width="1200" height="880">
+  <style>text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; letter-spacing: -0.01em; }</style>
+  <defs>
+    <marker id="ar-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#71717a"/></marker>
+    <marker id="ar-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#10a37f"/></marker>
+    <marker id="ar-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/></marker>
+  </defs>
+  <rect width="1200" height="880" fill="#ffffff"/>
+  <text x="600" y="38" text-anchor="middle" fill="#0d0d0d" font-size="20" font-weight="600">Handoff Steward — Versioned Routing for Multi-Agent Handoffs</text>
+  <rect x="120" y="80" width="200" height="64" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="220.0" y="104" text-anchor="middle" fill="#0d0d0d" font-size="16" font-weight="600">Codex</text>
+  <text x="220.0" y="122" text-anchor="middle" fill="#6e6e80" font-size="13">parallel subagents</text>
+  <rect x="500" y="80" width="200" height="64" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="600.0" y="104" text-anchor="middle" fill="#0d0d0d" font-size="16" font-weight="600">Claude</text>
+  <text x="600.0" y="122" text-anchor="middle" fill="#6e6e80" font-size="13">parallel subagents</text>
+  <rect x="880" y="80" width="200" height="64" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="980.0" y="104" text-anchor="middle" fill="#0d0d0d" font-size="16" font-weight="600">Kimi</text>
+  <text x="980.0" y="122" text-anchor="middle" fill="#6e6e80" font-size="13">parallel subagents</text>
+  <polyline points="220,144 220,166 380,166 380,180" fill="none" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar-gray)"/>
+  <polyline points="600,144 600,180" fill="none" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar-gray)"/>
+  <text x="682" y="162" text-anchor="middle" fill="#6e6e80" font-size="12">behavioral contract</text>
+  <polyline points="980,144 980,166 820,166 820,180" fill="none" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar-gray)"/>
+  <rect x="300" y="180" width="600" height="52" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="600.0" y="204" text-anchor="middle" fill="#0d0d0d" font-size="15" font-weight="600">handoff-steward (SKILL.md)</text>
+  <text x="600.0" y="222" text-anchor="middle" fill="#6e6e80" font-size="13">no direct writes · build proposal · handle verdict</text>
+  <polyline points="600,232 600,280" fill="none" stroke="#10a37f" stroke-width="1.5" marker-end="url(#ar-green)"/>
+  <text x="672" y="260" text-anchor="middle" fill="#6e6e80" font-size="12">proposal JSON</text>
+  <rect x="330" y="280" width="540" height="52" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="600.0" y="304" text-anchor="middle" fill="#0d0d0d" font-size="15" font-weight="600">steward CLI</text>
+  <text x="600.0" y="322" text-anchor="middle" fill="#6e6e80" font-size="13">init · submit · status · history · reconcile · watch</text>
+  <polyline points="330,306 100,306 100,472 150,472" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <text x="210" y="298" text-anchor="middle" fill="#6e6e80" font-size="12">submit</text>
+  <rect x="120" y="410" width="960" height="170" rx="8" ry="8" fill="none" stroke="#e5e5e5" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="1066" y="430" text-anchor="end" fill="#6e6e80" font-size="12" font-weight="500">Steward Core (single writer · serialized)</text>
+  <rect x="150" y="440" width="180" height="64" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="240.0" y="464" text-anchor="middle" fill="#0d0d0d" font-size="15" font-weight="600">Serial queue</text>
+  <text x="240.0" y="482" text-anchor="middle" fill="#6e6e80" font-size="13">single writer</text>
+  <rect x="390" y="440" width="220" height="64" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="500.0" y="464" text-anchor="middle" fill="#0d0d0d" font-size="13" font-weight="600">Jev Gate (4 parallel questions)</text>
+  <text x="500.0" y="482" text-anchor="middle" fill="#6e6e80" font-size="13">update_kind · target_section</text>
+  <text x="500.0" y="498" text-anchor="middle" fill="#6e6e80" font-size="12">decision_conflict · merge_risk</text>
+  <rect x="680" y="440" width="220" height="64" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="790.0" y="464" text-anchor="middle" fill="#0d0d0d" font-size="15" font-weight="600">Router</text>
+  <text x="790.0" y="482" text-anchor="middle" fill="#6e6e80" font-size="13">thresholds in config.json</text>
+  <polyline points="330,472 390,472" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <polyline points="610,472 680,472" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <rect x="390" y="516" width="220" height="44" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="500.0" y="540" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">TypeSafe API</text>
+  <text x="500.0" y="558" text-anchor="middle" fill="#6e6e80" font-size="13">Jev · System One</text>
+  <polyline points="500,504 500,516" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <text x="500" y="512" text-anchor="middle" fill="#6e6e80" font-size="12">system_one()</text>
+  <polyline points="720,504 720,600 235,600 235,640" fill="none" stroke="#10a37f" stroke-width="1.5" marker-end="url(#ar-green)"/>
+  <polyline points="760,504 760,612 445,612 445,640" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <polyline points="800,504 800,624 640,624 640,640" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <polyline points="840,504 840,640" fill="none" stroke="#f97316" stroke-width="1.5" marker-end="url(#ar-orange)"/>
+  <rect x="150" y="640" width="170" height="48" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <rect x="150" y="640" width="4" height="48" rx="2" ry="2" fill="#10a37f"/>
+  <text x="235.0" y="664" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">auto_commit</text>
+  <text x="235.0" y="682" text-anchor="middle" fill="#6e6e80" font-size="13">commit directly</text>
+  <rect x="360" y="640" width="170" height="48" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="445.0" y="664" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">field_select</text>
+  <text x="445.0" y="682" text-anchor="middle" fill="#6e6e80" font-size="13">Jev picks 1 of 3</text>
+  <rect x="570" y="640" width="140" height="48" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="640.0" y="664" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">reject</text>
+  <text x="640.0" y="682" text-anchor="middle" fill="#6e6e80" font-size="13">recorded only</text>
+  <rect x="750" y="640" width="170" height="48" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <rect x="750" y="640" width="4" height="48" rx="2" ry="2" fill="#f97316"/>
+  <text x="835.0" y="664" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">escalate</text>
+  <text x="835.0" y="682" text-anchor="middle" fill="#6e6e80" font-size="13">human ruling brief</text>
+  <rect x="150" y="740" width="230" height="60" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="265.0" y="764" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">canonical.json</text>
+  <text x="265.0" y="782" text-anchor="middle" fill="#6e6e80" font-size="13">+ handoff.md projection</text>
+  <rect x="420" y="740" width="230" height="60" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="535.0" y="764" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">events.jsonl</text>
+  <text x="535.0" y="782" text-anchor="middle" fill="#6e6e80" font-size="13">+ snapshots/</text>
+  <rect x="690" y="740" width="190" height="60" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="785.0" y="764" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">escalations/</text>
+  <text x="785.0" y="782" text-anchor="middle" fill="#6e6e80" font-size="13">human-ruling briefs</text>
+  <polyline points="235,688 235,740" fill="none" stroke="#10a37f" stroke-width="1.5" marker-end="url(#ar-green)"/>
+  <text x="290" y="718" text-anchor="middle" fill="#6e6e80" font-size="12">commit v+1</text>
+  <polyline points="445,688 445,740" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <polyline points="640,688 640,740" fill="none" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar-gray)"/>
+  <text x="668" y="718" text-anchor="middle" fill="#6e6e80" font-size="12">record</text>
+  <polyline points="835,688 835,740" fill="none" stroke="#f97316" stroke-width="1.5" marker-end="url(#ar-orange)"/>
+  <text x="862" y="718" text-anchor="middle" fill="#6e6e80" font-size="12">brief</text>
+  <rect x="940" y="730" width="200" height="60" rx="8" ry="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
+  <text x="1040.0" y="754" text-anchor="middle" fill="#0d0d0d" font-size="14" font-weight="600">Watchdog</text>
+  <text x="1040.0" y="772" text-anchor="middle" fill="#6e6e80" font-size="13">reconcile · watch</text>
+  <polyline points="265,800 265,825 1040,825 1040,790" fill="none" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar-gray)"/>
+  <text x="650" y="818" text-anchor="middle" fill="#6e6e80" font-size="12">poll hash</text>
+  <polyline points="1040,730 1040,380 320,380 320,440" fill="none" stroke="#f97316" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ar-orange)"/>
+  <text x="660" y="372" text-anchor="middle" fill="#6e6e80" font-size="12">direct write → revert + anonymous proposal re-routed</text>
+  <line x1="140" y1="862" x2="180" y2="862" stroke="#10a37f" stroke-width="1.5"/>
+  <text x="188" y="866" fill="#6e6e80" font-size="12">commit path</text>
+  <line x1="300" y1="862" x2="340" y2="862" stroke="#71717a" stroke-width="1.5"/>
+  <text x="348" y="866" fill="#6e6e80" font-size="12">default flow</text>
+  <line x1="440" y1="862" x2="480" y2="862" stroke="#71717a" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="488" y="866" fill="#6e6e80" font-size="12">contract / record</text>
+  <line x1="590" y1="862" x2="630" y2="862" stroke="#f97316" stroke-width="1.5"/>
+  <text x="638" y="866" fill="#6e6e80" font-size="12">escalation</text>
+  <line x1="730" y1="862" x2="770" y2="862" stroke="#f97316" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="778" y="866" fill="#6e6e80" font-size="12">watchdog recycle</text>
+</svg>

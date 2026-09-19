@@ -1,6 +1,7 @@
 """Offline unit tests — no API key, no network. Run: pytest tests/test_offline.py"""
 from __future__ import annotations
 
+import json
 import os
 import sys
 
@@ -143,6 +144,72 @@ def test_doctor_reports_missing_key_and_skill(tmp_path, monkeypatch):
     assert by_name["TYPESAFE_API_KEY"]["ok"] is False
     monkeypatch.setenv("TYPESAFE_API_KEY", "k")
     assert doctor(targets=[str(tmp_path / "nowhere")])["ok"] is False  # skill still missing
+
+
+# ---- hooks ----
+
+def test_guard_denies_store_writes(tmp_path):
+    from steward import hooks
+    store.init_store(str(tmp_path / "s"), "g", "goal")
+    hit = hooks.guard({"tool_input": {"file_path": str(tmp_path / "s" / "canonical.json")}})
+    assert hit["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert "submit" in hit["hookSpecificOutput"]["permissionDecisionReason"]
+    assert hooks.guard({"tool_input": {"file_path": str(tmp_path / "random.py")}}) is None
+    assert hooks.guard({"tool_input": {}}) is None
+
+
+def test_session_start_injects_store_state(tmp_path):
+    from steward import hooks
+    store.init_store(str(tmp_path / ".handoff" / "g1"), "g1", "goal one")
+    out = hooks.session_start({"cwd": str(tmp_path)})
+    ctx = out["hookSpecificOutput"]["additionalContext"]
+    assert "handoff-steward" in ctx and "g1" in ctx and "v0" in ctx
+
+
+def test_file_changed_reconciles(tmp_path, monkeypatch):
+    from steward import hooks
+    store.init_store(str(tmp_path / "s"), "g", "goal")
+    called = {}
+    monkeypatch.setattr("steward.watchdog.reconcile",
+                        lambda root: called.update(root=root) or {"external_write": True, "recovered": 1})
+    out = hooks.file_changed({"tool_input": {"file_path": str(tmp_path / "s" / "canonical.json")}})
+    assert called["root"] == str(tmp_path / "s")
+    assert "reverted" in out["hookSpecificOutput"]["additionalContext"]
+
+
+def test_install_hooks_merges_and_is_idempotent(tmp_path):
+    from steward import hooks
+    settings = tmp_path / "settings.json"
+    settings.write_text(json.dumps({"model": "opus", "hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": []}]}}))
+    assert hooks.install_hooks("claude", settings) == "installed"
+    assert hooks.install_hooks("claude", settings) == "already installed"
+    data = json.loads(settings.read_text())
+    assert data["model"] == "opus"  # untouched
+    assert len(data["hooks"]["PreToolUse"]) == 2  # merged, not clobbered
+    assert "SessionStart" in data["hooks"]
+
+
+# ---- MCP handlers ----
+
+def test_mcp_handlers(tmp_path, monkeypatch):
+    from steward import mcp_server
+    root = str(tmp_path / "s")
+    assert mcp_server.handle_init_store(root, "g", "goal")["initialized"]
+    status = mcp_server.handle_get_status(root)
+    assert status["version"] == 0 and status["goal"] == "goal"
+    assert mcp_server.handle_list_escalations(root) == []
+    monkeypatch.setattr("steward.mcp_server.Steward",
+                        lambda r: type("S", (), {"submit": lambda self, p: {"action": "auto_commit", "version": 1}})())
+    out = mcp_server.handle_submit_proposal(make_proposal().to_dict(), root)
+    assert out["action"] == "auto_commit"
+
+
+def test_mcp_register_json(tmp_path):
+    from steward import install
+    cfg = tmp_path / "mcp.json"
+    assert install._register_json(cfg, create=True) == "registered"
+    assert install._register_json(cfg, create=True) == "already registered"
+    assert install._mcp_registered_in_json(cfg)
 
 
 # ---- fail-closed ----

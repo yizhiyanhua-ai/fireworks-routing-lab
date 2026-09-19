@@ -34,8 +34,20 @@ def main() -> None:
     p.add_argument("--target", action="append", help="explicit skills dir; repeatable. Default: auto-detect")
     p.add_argument("--create", action="store_true", help="create agent skill dirs that do not exist yet")
 
+    p = sub.add_parser("install-mcp", help="register the MCP server with coding agents")
+    p.add_argument("--agent", action="append", help="claude|codex|cursor|gemini; repeatable. Default: all")
+
+    p = sub.add_parser("mcp", help="run the MCP server (stdio). Requires: pip install handoff-steward[mcp]")
+
+    p = sub.add_parser("hook", help="hook handler: reads hook JSON from stdin")
+    p.add_argument("name", choices=["guard", "session-start", "subagent-stop", "file-changed"])
+
+    p = sub.add_parser("install-hooks", help="wire hooks into agent configs")
+    p.add_argument("--agent", action="append", help="claude|cursor; repeatable. Default: both")
+
     p = sub.add_parser("doctor", help="check install readiness")
     p.add_argument("--live", action="store_true", help="also ping the TypeSafe API")
+    p.add_argument("--mcp", action="store_true", help="also check MCP registrations")
     p.add_argument("--target", action="append", help="explicit skills dir to check; repeatable")
 
     args = ap.parse_args()
@@ -50,9 +62,33 @@ def main() -> None:
         return
 
     if args.cmd == "doctor":
-        report = install.doctor(live=args.live, targets=args.target)
+        report = install.doctor(live=args.live, targets=args.target, mcp=args.mcp)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         sys.exit(0 if report["ok"] else 1)
+
+    if args.cmd == "install-mcp":
+        results = install.install_mcp(agents=args.agent)
+        print(json.dumps(results, ensure_ascii=False, indent=2))
+        if any(r["status"].startswith("error") for r in results):
+            sys.exit(1)
+        return
+
+    if args.cmd == "mcp":
+        from . import mcp_server
+        mcp_server.main()
+        return
+
+    if args.cmd == "hook":
+        from . import hooks
+        hooks.run_hook(args.name)
+        return
+
+    if args.cmd == "install-hooks":
+        from . import hooks
+        agents = args.agent or ["claude", "cursor"]
+        print(json.dumps([{"agent": a, "status": hooks.install_hooks(a)} for a in agents],
+                         ensure_ascii=False, indent=2))
+        return
 
     if not args.root:
         ap.error(f"--root is required for '{args.cmd}'")

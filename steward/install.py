@@ -1,8 +1,10 @@
 """Agent integration: install the bundled skill into agent skill dirs, and doctor checks."""
 from __future__ import annotations
 
+import json
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 ASSET_DIR = Path(__file__).parent / "assets" / "handoff-steward"
@@ -49,7 +51,98 @@ def install_skill(targets: list[str] | None = None, create: bool = False) -> lis
     return results
 
 
-def doctor(live: bool = False, targets: list[str] | None = None) -> dict:
+# ---------- MCP registration ----------
+
+MCP_SERVER_NAME = "handoff-steward"
+MCP_COMMAND = "handoff-steward-mcp"
+MCP_JSON_TARGETS = {
+    "cursor": Path.home() / ".cursor" / "mcp.json",
+    "gemini": Path.home() / ".gemini" / "settings.json",
+}
+CODEX_CONFIG = Path.home() / ".codex" / "config.toml"
+CLAUDE_JSON = Path.home() / ".claude.json"
+
+
+def _mcp_registered_in_json(path: Path) -> bool:
+    try:
+        data = json.loads(path.read_text())
+        return MCP_SERVER_NAME in data.get("mcpServers", {})
+    except Exception:
+        return False
+
+
+def _register_json(path: Path, create: bool) -> str:
+    if _mcp_registered_in_json(path):
+        return "already registered"
+    if not path.exists() and not create:
+        return "skipped: config does not exist"
+    data = json.loads(path.read_text()) if path.exists() else {}
+    data.setdefault("mcpServers", {})[MCP_SERVER_NAME] = {"command": MCP_COMMAND}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+    return "registered"
+
+
+def _codex_registered() -> bool:
+    try:
+        return f"mcp_servers.{MCP_SERVER_NAME}" in CODEX_CONFIG.read_text()
+    except Exception:
+        return False
+
+
+def _register_codex(create: bool) -> str:
+    if _codex_registered():
+        return "already registered"
+    if not CODEX_CONFIG.exists() and not create:
+        return "skipped: config does not exist"
+    CODEX_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    with CODEX_CONFIG.open("a") as f:
+        f.write(f"\n[mcp_servers.{MCP_SERVER_NAME}]\ncommand = \"{MCP_COMMAND}\"\n")
+    return "registered"
+
+
+def _register_claude() -> str:
+    if shutil.which("claude"):
+        subprocess.run(
+            ["claude", "mcp", "add", MCP_SERVER_NAME, "--", MCP_COMMAND],
+            check=True, capture_output=True,
+        )
+        return "registered via claude mcp add"
+    return _register_json(CLAUDE_JSON, create=True)
+
+
+def install_mcp(agents: list[str] | None = None, create: bool = True) -> list[dict]:
+    """Register the MCP server with coding agents."""
+    wanted = agents or ["claude", "codex", "cursor", "gemini"]
+    results = []
+    for agent in wanted:
+        entry = {"agent": agent}
+        try:
+            if agent == "claude":
+                entry["status"] = _register_claude()
+            elif agent == "codex":
+                entry["status"] = _register_codex(create)
+            elif agent in MCP_JSON_TARGETS:
+                entry["status"] = _register_json(MCP_JSON_TARGETS[agent], create)
+            else:
+                entry["status"] = f"skipped: unknown agent '{agent}'"
+        except Exception as exc:
+            entry["status"] = f"error: {type(exc).__name__}: {exc}"
+        results.append(entry)
+    return results
+
+
+def mcp_registrations() -> dict[str, bool]:
+    """Used by doctor: is the MCP server registered for each agent?"""
+    return {
+        "claude": _mcp_registered_in_json(CLAUDE_JSON),
+        "codex": _codex_registered(),
+        "cursor": _mcp_registered_in_json(MCP_JSON_TARGETS["cursor"]),
+        "gemini": _mcp_registered_in_json(MCP_JSON_TARGETS["gemini"]),
+    }
+
+
+def doctor(live: bool = False, targets: list[str] | None = None, mcp: bool = False) -> dict:
     """Check environment readiness. Exits nonzero via CLI when required checks fail."""
     checks = []
 
@@ -78,6 +171,22 @@ def doctor(live: bool = False, targets: list[str] | None = None) -> dict:
         "detail": "ok" if found_any else "no agent will discover the write-gateway contract",
         "required": True,
     })
+
+    if mcp:
+        regs = mcp_registrations()
+        for agent, registered in regs.items():
+            checks.append({
+                "name": f"mcp registered: {agent}",
+                "ok": registered,
+                "detail": "registered" if registered else "not registered (run: handoff-steward install-mcp)",
+                "required": False,
+            })
+        checks.append({
+            "name": "mcp registered for >= 1 agent",
+            "ok": any(regs.values()),
+            "detail": "ok" if any(regs.values()) else "run: handoff-steward install-mcp",
+            "required": False,
+        })
 
     if live:
         try:

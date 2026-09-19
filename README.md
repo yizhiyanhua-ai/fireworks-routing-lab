@@ -129,6 +129,52 @@ Every proposal gets one parallel Jev call: `update_kind` (Choice), `target_secti
 
 Thresholds live in `<store>/config.json` — tune them against your own data.
 
+## MCP & hooks: native integration with coding agents
+
+Beyond the CLI+skill contract, the steward plugs directly into agent runtimes:
+
+```bash
+pip install ".[mcp]"            # MCP server dependencies
+handoff-steward install-mcp      # register with Claude Code, Codex, Cursor, Gemini
+handoff-steward install-hooks    # Claude Code: PreToolUse guard + SessionStart context;
+                                 # Cursor: afterFileEdit reconcile
+handoff-steward doctor --mcp     # verify registrations
+```
+
+- **MCP tools**: `submit_proposal`, `get_status`, `get_history`, `list_escalations`, `init_store`
+  — agents submit without touching the shell at all
+- **guard (PreToolUse)**: denies direct Write/Edit into any store and points the agent at
+  `submit` — the preventive enforcement layer (mode 4)
+- **SessionStart**: injects store state (version, active decisions, pending escalations)
+  into every new session automatically
+- **file-changed (Cursor `afterFileEdit`)**: post-write reconcile for agents without
+  a blocking pre-edit hook
+
+## Beyond multi-tool: three scenarios
+
+The same mechanism serves a single coding agent's own workflow. Steward's version
+mechanics guarantee *state* truth; Jev's semantic judgments guard *content* truth.
+
+**1. Session → session handoff.** A store becomes a living document across sessions of
+one tool: the next session opens with the current version, open questions and pending
+escalations already injected (SessionStart hook). When the new session unknowingly
+contradicts a decision made three sessions ago, `decision_conflict` catches it instead
+of silently writing it in. Full event log = complete archaeology of every shift change.
+[Recipe](examples/recipes/session-handoff.md)
+
+**2. Subagent result reporting.** Five parallel subagents stop reporting prose to a
+lead agent that hand-summarizes; each submits directly to the steward. Aggregation
+becomes deterministic collection + Jev contradiction detection — when subagent-1 says
+"the API streams" and subagent-2 says "it doesn't", you get an escalation brief with
+both evidence links, not an averaged half-truth. `author_ref` keeps every claim
+traceable. [Recipe](examples/recipes/subagent-reporting.md)
+
+**3. A shared decision log with teeth.** The `decisions` section is a runtime-enforced
+ADR system: every new decision is fan-out checked against all active ones; contradictions
+escalate to you with a side-by-side brief; superseded decisions keep their full text,
+so you can always answer "when, by whom, and replaced by what". Cross-tool *and*
+cross-session. [Recipe](examples/recipes/decision-log.md)
+
 ## Usage modes
 
 The CLI is always the only write path — the modes differ only in *who calls it and when*.

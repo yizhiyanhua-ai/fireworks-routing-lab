@@ -1,17 +1,23 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.0] - 2026-09-19
 
 ### Added
-- **Bundled agent skill** (`steward/assets/handoff-steward/SKILL.md`): the write-gateway
-  behavioral contract, shipped inside the package — generic paths, works for any agent
-- **`handoff-steward install-skill`**: auto-detects `~/.claude/skills`, `~/.codex/skills`,
-  `~/.agents/skills`, `~/.pi/agent/skills` and installs/updates the skill; `--target`, `--create`
-- **`handoff-steward doctor`**: verifies API key, skill installation, and (with `--live`)
-  TypeSafe API reachability; exits nonzero when required checks fail
-- **Natural-language install**: README (EN + ZH) now leads with a one-sentence prompt users
-  can paste into Claude Code / Codex to install and verify everything
-- CI: GitHub Actions running offline tests on push/PR (Python 3.11–3.13)
+- **MCP server** (`handoff-steward mcp`, extra `[mcp]`): native tools for coding agents —
+  `submit_proposal`, `get_status`, `get_history`, `list_escalations`, `init_store`
+- **`handoff-steward install-mcp`**: registers the server with Claude Code (CLI or
+  ~/.claude.json), Codex (config.toml), Cursor (mcp.json), Gemini (settings.json)
+- **Agent hooks** (`handoff-steward hook …`): `guard` (PreToolUse deny for direct store
+  writes), `session-start` (inject store state), `subagent-stop` (reporting reminder),
+  `file-changed` (post-write reconcile, e.g. Cursor afterFileEdit)
+- **`handoff-steward install-hooks`**: merges hook config into Claude settings.json and
+  Cursor hooks.json, idempotent, never clobbers existing entries
+- **`doctor --mcp`**: checks MCP registrations per agent
+- README (EN/ZH): MCP/hooks section + three single-agent scenarios
+  (session handoff, subagent reporting, decision log) + examples/recipes/
+- **Bundled agent skill** (`steward/assets/handoff-steward/SKILL.md`), `install-skill`,
+  `doctor`, natural-language install prompts, GitHub Actions CI
+- 6 new offline tests (18 total)
 
 ## [0.1.0] - 2026-09-18
 

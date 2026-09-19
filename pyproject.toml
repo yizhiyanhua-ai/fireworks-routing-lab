@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "handoff-steward"
-version = "0.1.0"
+version = "0.2.0"
 description = "Version-managed routing for multi-agent handoff documents, with Jev (TypeSafe System One) as the semantic gate"
 readme = "README.md"
 license = { text = "MIT" }
@@ -23,9 +23,11 @@ dependencies = ["typesafe-sdk>=0.7.0"]
 [project.optional-dependencies]
 socks = ["socksio>=1.0.0"]   # needed when ALL_PROXY points at a SOCKS proxy
 dev = ["pytest>=8.0"]
+mcp = ["mcp>=1.0,<2"]        # MCP server for native agent integration
 
 [project.scripts]
 handoff-steward = "steward.cli:main"
+handoff-steward-mcp = "steward.mcp_server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["steward"]

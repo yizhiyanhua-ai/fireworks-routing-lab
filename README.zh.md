@@ -123,6 +123,45 @@ handoff-steward --root ./stores/goal-1 watch --interval 5   # watchdog 常驻模
 
 阈值在 `<store>/config.json`，请按你的真实数据校准。
 
+## MCP 与 Hooks：直接接入 coding agent 运行时
+
+在 CLI+skill 规约之外，steward 可以直接插进 agent 运行时：
+
+```bash
+pip install ".[mcp]"            # MCP server 依赖
+handoff-steward install-mcp      # 注册到 Claude Code、Codex、Cursor、Gemini
+handoff-steward install-hooks    # Claude Code: PreToolUse 拦截 + SessionStart 上下文注入
+                                 # Cursor: afterFileEdit 对账
+handoff-steward doctor --mcp     # 验证注册状态
+```
+
+- **MCP 工具**：`submit_proposal`、`get_status`、`get_history`、`list_escalations`、`init_store`
+  ——agent 完全不碰 shell 也能提交
+- **guard（PreToolUse）**：拦截任何指向 store 的 Write/Edit 并提示走 `submit`——事前强制层（模式 4）
+- **SessionStart**：新 session 自动注入 store 状态（版本、活跃决策、未决升级）
+- **file-changed（Cursor `afterFileEdit`）**：为没有事前拦截钩子的 agent 提供写后对账
+
+## 不止多工具：三个场景
+
+同一套机制可以直接服务单个 coding agent 自身的工作流。steward 的版本机制保证
+「状态的真」，Jev 的语义判断守护「内容的真」。
+
+**1. Session → session 交接。** store 变成同一工具跨 session 的活文档：新 session 一打开
+就注入当前版本、未决问题和待裁决升级（SessionStart hook）。当新 session 无意中推翻
+三个 session 前定下的决策，`decision_conflict` 会拦下升级，而不是悄悄写进去。
+完整事件流 = 每次换班的考古记录。[Recipe](examples/recipes/session-handoff.md)
+
+**2. Subagent 结果回报。** 5 个并行 subagent 不再向主 agent 回报散文等它人肉汇总，
+而是各自直接提交给 steward。汇总变成确定性归集 + Jev 矛盾检测——当 subagent-1 说
+「这个 API 支持流式」、subagent-2 说「不支持」，你拿到的是附双方证据链接的升级 brief，
+而不是被平均过的半真半假。`author_ref` 让每条结论可溯源。
+[Recipe](examples/recipes/subagent-reporting.md)
+
+**3. 有牙齿的共享决策日志。** `decisions` 区块是运行时强制的 ADR 系统：每条新决策都会
+对所有活跃决策做 fan-out 矛盾检查；矛盾的升级给你并附对照 brief；被废止的决策保留
+全文，你随时可以回答「什么时候、被谁、被哪个决策废止」。跨工具且跨 session。
+[Recipe](examples/recipes/decision-log.md)
+
 ## 四种使用模式
 
 CLI 永远是唯一写入通道，模式的区别只在于「谁来调、什么时机调」。

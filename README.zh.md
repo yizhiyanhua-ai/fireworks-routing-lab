@@ -48,9 +48,9 @@ Handoff Steward 挡在**每一次 handoff 写入之前**，作为单写者网关
 
 推荐的安装方式是**一句自然语言**，说给 Claude Code、Codex 或任何有 shell 权限的 agent：
 
-> “克隆 https://github.com/fireworks/handoff-steward 并按 README 装好 handoff-steward CLI，运行 install-skill 把你和其他工具的 skill 装上，最后跑 doctor --live 验证。需要 TypeSafe API key 时找我要。”
+> “克隆 https://github.com/yizhiyanhua-ai/fireworks-routing-lab 并按 README 装好 handoff-steward CLI，运行 install-skill 把你和其他工具的 skill 装上，最后跑 doctor --live 验证。需要 TypeSafe API key 时找我要。”
 
-> **EN:** "Clone https://github.com/fireworks/handoff-steward, follow its README to install the `handoff-steward` CLI, run `install-skill` so you and my other tools get the skill, then run `doctor --live` to verify. Ask me for the TypeSafe API key when needed."
+> **EN:** "Clone https://github.com/yizhiyanhua-ai/fireworks-routing-lab, follow its README to install the `handoff-steward` CLI, run `install-skill` so you and my other tools get the skill, then run `doctor --live` to verify. Ask me for the TypeSafe API key when needed."
 
 agent 会依次执行：克隆 → `pip install .` → `handoff-steward install-skill`
 （自动探测 `~/.claude/skills`、`~/.codex/skills`、`~/.agents/skills`、`~/.pi/agent/skills`）

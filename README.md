@@ -54,9 +54,9 @@ truth; calibration against your own data is what the test matrix is for.
 The intended way to install Handoff Steward is **one natural-language sentence** to
 Claude Code, Codex, or any agent with shell access:
 
-> **EN:** "Clone https://github.com/fireworks/handoff-steward, follow its README to install the `handoff-steward` CLI, run `install-skill` so you and my other tools get the skill, then run `doctor --live` to verify. Ask me for the TypeSafe API key when needed."
+> **EN:** "Clone https://github.com/yizhiyanhua-ai/fireworks-routing-lab, follow its README to install the `handoff-steward` CLI, run `install-skill` so you and my other tools get the skill, then run `doctor --live` to verify. Ask me for the TypeSafe API key when needed."
 
-> **中文：** “克隆 https://github.com/fireworks/handoff-steward 并按 README 装好 handoff-steward CLI，运行 install-skill 把你和其他工具的 skill 装上，最后跑 doctor --live 验证。需要 TypeSafe API key 时找我要。”
+> **中文：** “克隆 https://github.com/yizhiyanhua-ai/fireworks-routing-lab 并按 README 装好 handoff-steward CLI，运行 install-skill 把你和其他工具的 skill 装上，最后跑 doctor --live 验证。需要 TypeSafe API key 时找我要。”
 
 The agent will: clone → `pip install .` → `handoff-steward install-skill`
 (detects `~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`, `~/.pi/agent/skills`)

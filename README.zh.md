@@ -4,6 +4,7 @@
   <p><strong>多智能体 handoff 文档的版本化管理路由。</strong><br/>
   Jev（TypeSafe System One）负责语义判断，代码负责版本机制。</p>
   <p>
+    <a href="https://github.com/yizhiyanhua-ai/fireworks-routing-lab/actions/workflows/ci.yml"><img src="https://github.com/yizhiyanhua-ai/fireworks-routing-lab/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"/></a>
     <img src="https://img.shields.io/badge/python-%3E%3D3.11-blue.svg" alt="Python >=3.11"/>
     <img src="https://img.shields.io/badge/tests-10%20offline%20%2B%2016%20live-brightgreen.svg" alt="tests"/>

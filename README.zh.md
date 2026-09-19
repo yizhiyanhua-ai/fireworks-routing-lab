@@ -122,6 +122,46 @@ handoff-steward --root ./stores/goal-1 watch --interval 5   # watchdog 常驻模
 
 阈值在 `<store>/config.json`，请按你的真实数据校准。
 
+## 四种使用模式
+
+CLI 永远是唯一写入通道，模式的区别只在于「谁来调、什么时机调」。
+
+### 1. Skill 驱动（主模式）：agent 自主走网关
+
+派 subagent 时一句话即可，skill 会接管细节：
+
+> “完成后更新 handoff（store: `~/work/.handoff/goal-video-pipeline`），遵循 handoff-steward skill，你的 author_ref 是 `claude:session-main:subagent-2`。”
+
+subagent 自主执行：`status` 读版本 → 构造 proposal → `submit` → Jev 路由。
+同一时刻另一个 subagent 也在提交 → flock 串行 → stale 重检 → 作为下一版本正常入库，
+零丢更新。
+
+### 2. CLI 手动：处理 escalate 裁决
+
+```bash
+handoff-steward --root <store> history | grep escalation   # 找到它
+cat <store>/escalations/esc-*.json                         # 读 brief（冲突双方 + Jev 理由）
+# 你裁决：维持 D-1（PostgreSQL），报告模块允许 MongoDB 只读副本
+handoff-steward --root <store> submit --proposal ruling.json   # summary 注明 "人工裁决: ..."
+```
+
+### 3. Watchdog：兜住绕过规约的直写
+
+```bash
+nohup handoff-steward --root <store> watch --interval 5 > /tmp/steward-watch.log 2>&1 &
+# 某 subagent 无视规约直改 canonical.json → watchdog 日志：
+# {"external_write": true, "recovered": 1, "results": [{"action": "auto_commit", ...}]}
+```
+
+直写被回滚，内容作为匿名提案重走 Jev 闸——绕过得不到特权，矛盾内容照样 escalate。
+事件流留下 `external_write_detected` 记录可追责。
+
+### 4. Hook 拦截（事前强制，未启用）
+
+强合规场景可在 PreToolUse 钩子里拦截指向 handoff store 的 `Write`/`Edit`，拒绝并
+提示改用 `handoff-steward submit`——这是唯一事前强制，但需要新增 `guard` 子命令，
+且 Claude / Codex / Kimi 钩子机制各异。日常用模式 1+3 已够，模式 4 留给强合规。
+
 ## 并发模型
 
 跨工具和同工具（多 session × 多 subagent）对 steward 来说完全同构：都是并发提案提交者。

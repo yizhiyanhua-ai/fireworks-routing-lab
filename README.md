@@ -128,6 +128,49 @@ Every proposal gets one parallel Jev call: `update_kind` (Choice), `target_secti
 
 Thresholds live in `<store>/config.json` — tune them against your own data.
 
+## Usage modes
+
+The CLI is always the only write path — the modes differ only in *who calls it and when*.
+
+### 1. Skill-driven (primary): agents route themselves
+
+Dispatch a subagent with one sentence; the skill handles the rest:
+
+> "When done, update the handoff (store: `~/work/.handoff/goal-video-pipeline`) following the handoff-steward skill. Your author_ref is `claude:session-main:subagent-2`."
+
+The subagent autonomously: `status` → builds a proposal with the current version →
+`submit` → Jev routes it. A sibling subagent submitting at the same moment is
+serialized by the flock, re-gated via `still_applies`, and lands as the next version.
+Zero lost updates.
+
+### 2. Manual CLI: working an escalation
+
+```bash
+handoff-steward --root <store> history | grep escalation   # find it
+cat <store>/escalations/esc-*.json                         # read the brief (both sides + Jev reasoning)
+# you rule: keep D-1 (PostgreSQL), allow a MongoDB read replica for reporting
+handoff-steward --root <store> submit --proposal ruling.json   # summary: "human ruling: ..."
+```
+
+### 3. Watchdog: catching direct writes that bypass the skill
+
+```bash
+nohup handoff-steward --root <store> watch --interval 5 > /tmp/steward-watch.log 2>&1 &
+# a rogue subagent edits canonical.json directly → watchdog log:
+# {"external_write": true, "recovered": 1, "results": [{"action": "auto_commit", ...}]}
+```
+
+The direct write is reverted, its content re-enters as an anonymous proposal and must
+pass the same Jev gate — bypassing earns no privilege; contradictions still escalate.
+An `external_write_detected` event stays in the log for accountability.
+
+### 4. Hook interception (prevention, not yet enabled)
+
+For hard compliance, a PreToolUse hook can reject `Write`/`Edit` calls targeting any
+handoff store and point the agent at `handoff-steward submit` — the only *preventive*
+enforcement. Requires a new `guard` subcommand and per-tool hook wiring (Claude /
+Codex / Kimi differ). Modes 1+3 cover daily use; mode 4 is reserved for strict setups.
+
 ## Concurrency model
 
 Cross-tool and same-tool (multiple sessions × subagents) look identical to the

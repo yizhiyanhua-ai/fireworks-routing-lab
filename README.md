@@ -150,6 +150,36 @@ handoff-steward doctor --mcp     # verify registrations
 - **file-changed (Cursor `afterFileEdit`)**: post-write reconcile for agents without
   a blocking pre-edit hook
 
+## Self-built agents (LangGraph, Agents SDK, AutoGen, …)
+
+Teams running their own coding agent on an open-source framework mount
+`handoff-steward-mcp` through the framework's MCP client — no shell wrapper needed:
+
+```python
+# LangGraph / LangChain
+from langchain_mcp_adapters.client import MultiServerMCPClient
+client = MultiServerMCPClient({
+    "handoff-steward": {"transport": "stdio", "command": "handoff-steward-mcp", "args": []}
+})
+tools = await client.get_tools()   # submit_proposal, get_status, …
+```
+
+```python
+# OpenAI Agents SDK
+from agents.mcp import MCPServerStdio
+steward = await MCPServerStdio(name="handoff-steward",
+    params={"command": "handoff-steward-mcp", "args": []}).__aenter__()
+```
+
+Works the same for AutoGen (`McpWorkbench`), CrewAI, Pydantic AI and smolagents.
+Deeper still, Python agents can skip MCP entirely and use the library API:
+`from steward import Steward, Proposal` — inject your own `TypeSafeClient`, tune
+`config.json` thresholds, read `history()` for team audit.
+
+Deployment note: the store lock is `flock` (single-machine semantics) and MCP runs
+over stdio, so run the agent fleet and the store on one host. `author_ref` is
+self-declared — trusted-team scope, not multi-tenant.
+
 ## Beyond multi-tool: three scenarios
 
 The same mechanism serves a single coding agent's own workflow. Steward's version

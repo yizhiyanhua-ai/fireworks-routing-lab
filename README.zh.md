@@ -141,6 +141,34 @@ handoff-steward doctor --mcp     # 验证注册状态
 - **SessionStart**：新 session 自动注入 store 状态（版本、活跃决策、未决升级）
 - **file-changed（Cursor `afterFileEdit`）**：为没有事前拦截钩子的 agent 提供写后对账
 
+## 自研 coding agent（LangGraph、Agents SDK、AutoGen…）
+
+团队基于开源框架自研的 coding agent，通过框架的 MCP client 挂载 `handoff-steward-mcp`
+即可，无需 shell 封装：
+
+```python
+# LangGraph / LangChain
+from langchain_mcp_adapters.client import MultiServerMCPClient
+client = MultiServerMCPClient({
+    "handoff-steward": {"transport": "stdio", "command": "handoff-steward-mcp", "args": []}
+})
+tools = await client.get_tools()   # submit_proposal、get_status…
+```
+
+```python
+# OpenAI Agents SDK
+from agents.mcp import MCPServerStdio
+steward = await MCPServerStdio(name="handoff-steward",
+    params={"command": "handoff-steward-mcp", "args": []}).__aenter__()
+```
+
+AutoGen（`McpWorkbench`）、CrewAI、Pydantic AI、smolagents 同理。
+Python 系 agent 还可以跳过 MCP 直接用库 API：`from steward import Steward, Proposal`
+——注入自己的 `TypeSafeClient`、调 `config.json` 阈值、读 `history()` 做团队审计。
+
+部署注意：store 锁是 `flock`（单机语义），MCP 走 stdio，因此 agent 集群和 store
+要部署在同一台机器上。`author_ref` 是自报身份——适用于可信团队，不是多租户方案。
+
 ## 不止多工具：三个场景
 
 同一套机制可以直接服务单个 coding agent 自身的工作流。steward 的版本机制保证
